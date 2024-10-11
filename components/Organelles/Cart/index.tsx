@@ -1,165 +1,158 @@
-"use client"
+"use client";
+
 import axios from "axios";
-import { useState, useEffect, Dispatch, SetStateAction } from "react";
-import { useAuth } from "@/components/Wrapper/universalState";
+import { useState, useEffect } from "react";
+import { useSession } from "next-auth/react";
 import Swal from "sweetalert2";
-
-import { useAuthInterface, CartItemInterface } from "@/utils/interface";
-import { IUsersDocument } from "@/models/user";
-
-import { FaSpinner } from "react-icons/fa";
-
 import Link from "next/link";
 import IndividualCartProductCard from "@/components/Molecules/CartCard";
-
-type StateSetState = {
-    selectedUserData: IUsersDocument;
-    setSelectedUserData: Dispatch<SetStateAction<IUsersDocument>>;
-}
+import { CartItemInterface } from "@/utils/interface";
+import { FaSpinner } from "react-icons/fa";
 
 const CartOrganelles = () => {
+  const { data: session } = useSession(); // Use session to get user info
+  const [cartItems, setCartItems] = useState<CartItemInterface[]>([]);
+  const [cartLoading, setCartLoading] = useState(true);
+  const [editCard, setEditCard] = useState(false);
+  const [deleteInitiated, setDeleteInitiated] = useState(false);
+  const [changesRequestedcards, setChangesRequestCards] = useState<CartItemInterface[]>([]);
 
-    const [cartItems, setCartItems] = useState<CartItemInterface[]>([]);
+  // Fetch cart items for the current user
+  const fetchData = async () => {
+    if (!session?.user?.id) return; // Return early if no user ID in session
 
-    const [cartLoading, setCartLoading] = useState(true);
-    const [editCard, setEditCard] = useState(false);
-    const [deleteInitiated, setDeleteInitiated] = useState(false);
-    const [changesRequestedcards, setChangesRequestCards] = useState<CartItemInterface[]>([])
+    try {
+      setCartLoading(true);
 
-    const [userState, setUserState] = useState<useAuthInterface | any>({})
+      // Fetch cart items
+      const fetchCartData = await axios.get(`/api/cart?userId=${session.user.id}`);
 
-    const globalState = useAuth() as StateSetState;
+      // Log response for debugging
+      console.log("Fetched Cart Data: ", fetchCartData.data); 
 
-    useEffect(() => {
-        if (globalState) {
-            if (globalState?.selectedUserData) {
-                setUserState(globalState?.selectedUserData)
-            }
-        }
-    }, [globalState])
+      // Check if the response contains items
+      if (fetchCartData.data?.items?.length) {
+        setCartItems(fetchCartData.data.items); // Set cart items
+        setEditCard(false);
+      } else {
+        // If no cart items, clear state and show empty cart message
+        setCartItems([]);
+      }
 
-    const fetchData = async () => {
-        try {
-            setCartLoading(true)
-            const fetchCartData = await axios.get(`/api/cart?userId=${userState._id}`)
-            if (fetchCartData.data) {
-                setCartLoading(false)
-                setCartItems(fetchCartData.data.data)
-                setEditCard(false)
-            } else {
-                setCartLoading(false)
-            }
-        } catch (err) {
-            console.error("err", err)
-            setCartLoading(false)
-        }
+      setCartLoading(false);
+    } catch (err) {
+      console.error("Error fetching cart data:", err);
+      setCartLoading(false);
+    }
+  };
+
+  // Trigger fetching cart items when user session is available or deletion occurs
+  useEffect(() => {
+    if (session?.user?.id && (!cartItems.length || deleteInitiated)) {
+      fetchData();
+      setDeleteInitiated(false);
+    }
+  }, [session, deleteInitiated]);
+
+  // Handle checkout
+  const onCheckout = () => {
+    if (editCard) {
+      Swal.fire({
+        icon: "warning",
+        text: "Please save your changes before proceeding to checkout.",
+        timer: 3000,
+      });
+      return;
     }
 
-    useEffect(() => {
-        if (userState._id && (!cartItems.length || deleteInitiated)) {
-            fetchData()
-            setDeleteInitiated(false)
-        }
-    }, [userState, deleteInitiated]);
-
-    const onCheckout = () => {
-        if(editCard){
-            return (
-                Swal.fire({
-                    icon: "warning",
-                    text: "Save your changes",
-                    timer: 3000
-                })
-            )
-        }
-        if(!cartItems.length){
-            return (
-                Swal.fire({
-                    icon: "error",
-                    text: "Cart is empty",
-                    timer: 3000
-                })
-            )
-        }else {
-            if(!editCard){
-                return (
-                    Swal.fire({
-                        icon: "success",
-                        text: "Checkout product",
-                        timer: 3000
-                    })
-                )
-            }
-        }
+    if (!cartItems.length) {
+      Swal.fire({
+        icon: "error",
+        text: "Your cart is empty.",
+        timer: 3000,
+      });
+      return;
     }
 
-    const onEditRequestedChanges = async() => {
-        const iterateData = changesRequestedcards.map(async(items) => {
-            const toEditCartData = await axios.post(`/api/cart?productId=${items.productId}&canProductBeAdded=true`, {
-                productCount: items.productCount,
-                "status": "CART"
-            });
-            if(toEditCartData.data && toEditCartData.status === 200) {
-                return items
-            }else {
-                return null
-            }
-        });
-        if(changesRequestedcards.length){
-            if(iterateData.length){
-                setChangesRequestCards([])
-                return (
-                    Swal.fire({
-                        icon: "success",
-                        text: "Items editted successfully",
-                        timer: 3000
-                    })
-                )
-            }
-        }
-    }
+    Swal.fire({
+      icon: "success",
+      text: "Proceeding to checkout!",
+      timer: 3000,
+    });
+  };
 
-    return (
-        <div className="flex flex-col items-center w-full h-full">
-            <div className="flex items-center flex-col max-w-[1280px] w-full h-full p-6 gap-10">
-                <h1 className="text-xl font-semibold text-[#333333] h-max max-w-[1024px] w-full uppercase">Cart</h1>
-                <div className="flex flex-col items-center justify-start h-full w-full relative overflow-y-scroll min-h-[50vh]">
-                    {cartLoading 
-                    ? <div className="absolute w-full h-full flex flex-col items-center justify-center bg-white/60">
-                        <FaSpinner className="animate-spin"/>
-                    </div> : null}
-                    {
-                        !cartItems.length 
-                        ? 
-                        <div className="m-auto h-full w-full min-h-[50vh] text-center flex items-center justify-center">
-                            <p>No items available</p>
-                        </div> 
-                        : 
-                        (cartItems.map((items) => {
-                            return (
-                                <IndividualCartProductCard 
-                                    items={items} 
-                                    changeIfEditted={setEditCard}
-                                    changedData={changesRequestedcards} 
-                                    setChangedData={setChangesRequestCards}
-                                    key={items._id}
-                                    toDelete={setDeleteInitiated}
-                                />
-                            )
-                        }))
-                    }
-                </div>
-                <div className="w-full flex flex-col items-center gap-3">
-                    <div className="flex items-center gap-4">
-                        {editCard ? <button onClick={onEditRequestedChanges} className="bg-green-500 text-white px-5 py-3 rounded-sm min-w-[150px]">Save changes</button> : null}
-                        <button className="bg-blue-500 text-white px-5 py-3 rounded-sm min-w-[150px]" onClick={onCheckout}>Checkout</button>
-                    </div>
-                    <p className="text-sm text-[#333333]">{`(or)`}</p>
-                    <Link href={`/products`}>Keep Shopping</Link>
-                </div>
+  // Save changes requested for cart items
+  const onEditRequestedChanges = async () => {
+    const promises = changesRequestedcards.map(async (item) => {
+      const response = await axios.put(`/api/cart`, {
+        cartId: item._id,
+        productCount: item.productCount,
+        status: "CART",
+      });
+
+      if (response.data && response.status === 200) {
+        return item;
+      }
+      return null;
+    });
+
+    const results = await Promise.all(promises);
+    if (results.some((item) => item !== null)) {
+      setChangesRequestCards([]);
+      Swal.fire({
+        icon: "success",
+        text: "Items edited successfully",
+        timer: 3000,
+      });
+    }
+  };
+
+  return (
+    <div className="flex flex-col items-center w-full h-full">
+      <div className="flex items-center flex-col max-w-[1280px] w-full h-full p-6 gap-10">
+        <h1 className="text-xl font-semibold text-[#333333] h-max max-w-[1024px] w-full uppercase">Cart</h1>
+
+        {/* Cart Items Section */}
+        <div className="flex flex-col items-center justify-start h-full w-full relative overflow-y-scroll min-h-[50vh]">
+          {cartLoading && (
+            <div className="absolute w-full h-full flex flex-col items-center justify-center bg-white/60">
+              <FaSpinner className="animate-spin" />
             </div>
+          )}
+
+          {!cartItems.length && !cartLoading ? (
+            <div className="m-auto h-full w-full min-h-[50vh] text-center flex items-center justify-center">
+              <p>No items available in the cart</p>
+            </div>
+          ) : (
+            cartItems.map((item) => (
+              <IndividualCartProductCard
+                key={item._id}
+                items={item}
+                changeIfEditted={setEditCard}
+                changedData={changesRequestedcards}
+                setChangedData={setChangesRequestCards}
+                toDelete={setDeleteInitiated}
+              />
+            ))
+          )}
         </div>
-    )
-}
+
+        {/* Action Buttons */}
+        <div className="w-full flex flex-col items-center gap-3">
+          <div className="flex items-center gap-4">
+            <button className="bg-blue-500 text-white px-5 py-3 rounded-sm min-w-[150px]" onClick={onCheckout}>
+              Checkout
+            </button>
+          </div>
+          <p className="text-sm text-[#333333]">(or)</p>
+          <Link href={`/products`}>
+            Keep Shopping
+          </Link>
+        </div>
+      </div>
+    </div>
+  );
+};
 
 export default CartOrganelles;

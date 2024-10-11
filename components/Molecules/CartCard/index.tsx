@@ -1,19 +1,10 @@
-import {
-  useState,
-  useEffect,
-  ChangeEvent,
-  Dispatch,
-  SetStateAction,
-} from "react";
+import { useState, useEffect, Dispatch, SetStateAction } from "react";
 import axios from "axios";
-
 import Image from "next/image";
 import Link from "next/link";
-
 import { BiTrash } from "react-icons/bi";
 import { IoClose } from "react-icons/io5";
 import { TiTick } from "react-icons/ti";
-
 import { CartItemInterface } from "@/utils/interface";
 import Swal from "sweetalert2";
 
@@ -32,18 +23,67 @@ const IndividualCartProductCard = ({
 }) => {
   const [productCount, setProductCount] = useState(items.productCount);
 
-  const onChangeValue = (e: ChangeEvent<HTMLInputElement>) => {
-    let value = Number(e.target.value);
-    if (value < 1) {
-      value = 1;
+  // Access product and stock details from the cart item
+  const product = items.productDetails;
+  const stockData = items.stockData;
+
+  const productCost = ((product.cost - product.discount) * productCount).toFixed(2);
+
+  const updateCartCount = async (newCount: number) => {
+    try {
+      await axios.put(`/api/cart`, {
+        cartId: items._id,
+        productCount: newCount,
+        status: "CART",
+      });
+    } catch (error) {
+      console.error("Error updating cart count:", error);
+      Swal.fire({
+        icon: "error",
+        text: "Error updating cart item count",
+        timer: 3000,
+      });
     }
-    setProductCount(value);
   };
 
-  const productCost = (
-    (items.cost - items.cost * items.discount) *
-    productCount
-  ).toFixed(0);
+  const incrementProductCount = () => {
+    if (productCount < 99 && productCount < stockData.stock) { // Ensure we don't exceed stock
+      const newCount = productCount + 1;
+      setProductCount(newCount);
+      updateCartCount(newCount);
+    }
+  };
+
+  const decrementOrDeleteItem = () => {
+    if (productCount > 1) {
+      const newCount = productCount - 1;
+      setProductCount(newCount);
+      updateCartCount(newCount);
+    } else {
+      deleteItemsFromCart(items._id);
+    }
+  };
+
+  const deleteItemsFromCart = async (cartId: string) => {
+    try {
+      const deleteCartData = await axios.delete(`/api/cart?cartId=${cartId}`);
+      if (deleteCartData.data && deleteCartData.status === 200) {
+        toDelete(true);
+        Swal.fire({
+          icon: "success",
+          text: "Item deleted successfully",
+          timer: 3000,
+        });
+      }
+    } catch (error) {
+      console.error("Error deleting cart item:", error);
+      Swal.fire({
+        icon: "error",
+        text: "Error deleting cart item",
+        timer: 3000,
+      });
+    }
+  };
 
   useEffect(() => {
     const addedValueItems = {
@@ -73,59 +113,30 @@ const IndividualCartProductCard = ({
     }
   }, [productCount]);
 
-  const deleteItemsFromCart = async (cartId: string) => {
-    const deleteCartData = await axios.delete(`/api/cart?productId=${cartId}`);
-    if (deleteCartData.data && deleteCartData.status === 200) {
-      toDelete(true);
-      return Swal.fire({
-        icon: "success",
-        text: "Item deleted successfully",
-        timer: 3000,
-      });
-    } else {
-      toDelete(false);
-    }
-  };
-
   return (
     <div className="flex max-w-[1024px] border-t-[1px] border-b-[1px] border-slate-100 p-4 w-10/12">
-      <div className="flex w-full h-full items-center gap-5 relative">
-        {!items.stock ? (
-          <div className="absolute w-full h-full bg-white/90 flex items-center justify-center">
-            <div className="px-3 py-2 rounded-lg border border-slate-200 w-max bg-white">
-              Product not available
-            </div>
-          </div>
-        ) : null}
-        <Image
-          src={items.image}
-          alt={items.name}
-          className="w-32 h-32"
-          width={40}
-          height={40}
-          quality={100}
-        />
+      <div className="flex w-full h-full items-center gap-5">
+        <Image src={product.image} alt={product.name} className="w-32 h-32" width={40} height={40} quality={100} />
         <div className="flex justify-between items-center w-full h-full">
           <div className="flex flex-col items-start gap-2">
-            <Link
-              href={`/products/${items.category}/${items.productId}`}
-              className="text-xl font-semibold capitalize text-[#333333]"
-            >
-              {items.name}
+            <Link href={`/products/${product.category}/${product._id}`} className="text-xl font-semibold capitalize text-[#333333]">
+              {product.name}
             </Link>
             <div className="w-max gap-1 flex items-center text-lg font-normal capitalize text-[#222222]">
+              <button onClick={decrementOrDeleteItem} className="bg-gray-300 px-3 py-1 rounded">-</button>
               <input
                 type="number"
                 value={productCount}
-                onChange={(e) => onChangeValue(e)}
-                className="w-10"
+                readOnly
+                className="w-12 text-center mx-2"
               />
-              <p>{items.measurement}</p>
+              <button onClick={incrementProductCount} className="bg-gray-300 px-3 py-1 rounded">+</button>
+              <p>{product.measurement}</p>
             </div>
-            {items.stock > productCount ? (
+            {stockData?.stock > productCount ? (
               <span className="flex gap-1 items-center mt-3">
                 <TiTick className="text-xl text-green-600" />
-                <p className="text-sm">In stock</p>
+                <p className="text-sm">In stock ({stockData.stock})</p>
               </span>
             ) : (
               <span className="flex gap-1 items-center mt-3">
@@ -136,10 +147,7 @@ const IndividualCartProductCard = ({
           </div>
           <div className="flex flex-col items-start justify-between gap-16 h-full">
             <p>₹ {productCost}</p>
-            <span
-              className="flex gap-1 items-center cursor-pointer"
-              onClick={() => deleteItemsFromCart(items.productId)}
-            >
+            <span className="flex gap-1 items-center cursor-pointer" onClick={() => deleteItemsFromCart(items._id)}>
               <BiTrash className="text-xl text-red-400" />
               <p className="text-sm">Remove</p>
             </span>

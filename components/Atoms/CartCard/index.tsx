@@ -4,9 +4,7 @@ import { IoMdClose } from "react-icons/io";
 
 const CartDetailCard = ({image, name, price, quantity}:{image: string, name: string, price: number, quantity: number}) => {
     
-    const toDeleteCartData = () => {
-
-    }
+    
 
     return (
         <div className="flex flex-col md:grid md:grid-cols-5 items-center justify-center p-2 border-b-[0.5px] border-x-transparent border-t-transparent border-slate-300">

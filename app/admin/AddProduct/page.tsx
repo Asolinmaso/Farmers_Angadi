@@ -29,7 +29,6 @@ export default function AdminPage () {
     );
   }
 
-  // Optional: Return null to not show anything while redirecting or unauthenticated
   return null;
 
   

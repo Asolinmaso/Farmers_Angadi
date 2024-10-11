@@ -12,7 +12,7 @@ const SeparateCategory = ({params}:any) => {
                 const identifier = productData.data.data[0][decodeURIComponent(params.category)]
                 if(identifier){
                     return (
-                        <div className="w-screen h-max flex flex-col items-center justify-center p-6">
+                        <div className=" h-max flex flex-col items-center justify-center p-6">
                             <div className="w-full max-w-[1280px] flex items-center justify-between">
                                 <Link
                                     href={`/`}
@@ -29,7 +29,7 @@ const SeparateCategory = ({params}:any) => {
                             grid grid-cols-2 sm:flex sm:flex-wrap place-content-center xl:grid xl:grid-cols-4 gap-6 sm:gap-12 py-12 items-center">
                             {identifier.products.map((i:any) => {
                                 return (
-                                    <MiniProductcard data={i} uniqueIdentifier={identifier.slug.toLowerCase()} key={i.name}/>
+                                    <MiniProductcard data={i} key={i.name}/>
                                 )
                             })}
                             </div>

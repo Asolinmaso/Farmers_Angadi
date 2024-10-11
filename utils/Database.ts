@@ -1,14 +1,23 @@
 import mongoose from "mongoose";
 
-const mongoURL: string | any = process.env.NEXT_PUBLIC_MONGO_ATLAS_URL;
+const mongoURL: string = process.env.NEXT_PUBLIC_MONGO_ATLAS_URL || "";
+
+let isConnected: boolean = false;
 
 const connectMongo = async () => {
+  if (isConnected) {
+    console.log("Reusing existing MongoDB connection");
+    return;
+  }
+
   try {
     await mongoose.connect(mongoURL);
-    console.log("the server is running on port 3000")
+    isConnected = true;
+    console.log("MongoDB connected successfully");
   } catch (error) {
-    console.log("Connection failed!", error);
+    console.error("MongoDB connection failed:", error);
+    isConnected = false;
   }
-}
+};
 
 export default connectMongo;

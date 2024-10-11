@@ -10,6 +10,7 @@ export interface productInterface {
 }
 
 export interface productOnlyInterface {
+    stockData: any;
     _id: ObjectId;
     name: string;
     cost: number;
@@ -76,6 +77,7 @@ export interface useAuthInterface {
 }
 
 export interface CartItemInterface {
+    stockData: any;
     _id: string;
     productId: string;
     productCount: number;
@@ -85,6 +87,7 @@ export interface CartItemInterface {
     updated_at: string;
     stock: number;
     totalPrice: number;
+    productDetails:any;
     image: string;
     name: string;
     cost: number;

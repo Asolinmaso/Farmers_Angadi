@@ -1,184 +1,225 @@
 "use client";
 
+import { useState, useEffect } from "react";
 import axios from "axios";
 import Image from "next/image";
-import { useState, useEffect } from "react";
-import {
-  productListingInterface,
-  productOnlyInterface,
-} from "@/utils/interface";
-import {AiOutlineShoppingCart} from "react-icons/ai";
+import Link from "next/link";
+import { productOnlyInterface } from "@/utils/interface";
+import { AiOutlineShoppingCart } from "react-icons/ai";
 import Swal from "sweetalert2";
+import { useSession } from "next-auth/react";
 
 const IndividualProductView = ({
   params,
 }: {
   params: { productId: string; category: string };
 }) => {
+  const { data: session } = useSession();
+  const [productData, setProductData] = useState<productOnlyInterface | null>(null);
+  const [relatedProducts, setRelatedProducts] = useState<productOnlyInterface[]>([]);
   const [trackProductCount, setTrackProductCount] = useState(1);
-  const [productData, setProductData] = useState<productOnlyInterface[]>([]);
 
   const { productId, category } = params;
 
-  const increaseProdCount = () => {
-    if(trackProductCount < 99){
-        setTrackProductCount(trackProductCount + 1);
-    }
-  };
+  useEffect(() => {
+    fetchProductData();
+    fetchRelatedProducts();
+  }, [productId, category]);
 
-  const decreaseProdCount = () => {
-    if(trackProductCount > 1){
-        setTrackProductCount(trackProductCount - 1);
-    }
-  };
-
-  const toGetProductData = async () => {
+  const fetchProductData = async () => {
     try {
-      const selectedCardData = await axios.get(
-        `${process.env.NEXT_PUBLIC_BASE_URL}/api/product?productId=${productId}`
-      );
-      if (selectedCardData.data.data) {
-        const display: productListingInterface = selectedCardData.data.data[0];
-
-        const words = decodeURIComponent(category).split(" ");
-
-        const value = words.map((word) => { 
-          return word[0].toUpperCase() + word.substring(1); 
-        }).join(" ");
-
-        const reqData = display[words.length > 1 ? value : category].products;
-
-        if (reqData) {
-            setProductData(reqData)
-        }
+      const response = await axios.get(`/api/product?productId=${productId}`);
+      if (response.data && response.data.data) {
+        setProductData(response.data.data); // Directly assign the product object
       }
-    } catch (error: any) {
-      console.error("Error fetching product data:", error?.message);
+    } catch (error) {
+      console.error("Error fetching product data:", error.message);
     }
   };
 
-  const addToCart = async() => {
-    const toAddToCart = await axios.post(`/api/cart?productId=${productId}`, {
-      productCount: trackProductCount,
-      "status": "CART"
+  const fetchRelatedProducts = async () => {
+    try {
+      const response = await axios.get(`/api/product?category=${category}&limit=4`);
+      if (response.data && response.data.data.length) {
+        setRelatedProducts(response.data.data.filter((p: productOnlyInterface) => p._id.toString() !== productId));
+      }
+    } catch (error) {
+      console.error("Error fetching related products:", error.message);
+    }
+  };
+
+  const handleProductCountChange = (operation: 'increase' | 'decrease') => {
+    setTrackProductCount(prev => {
+      if (operation === 'increase' && prev < (productData?.stockData.stock || 99)) return prev + 1; // Limit to stock count
+      if (operation === 'decrease' && prev > 1) return prev - 1;
+      return prev;
     });
-    if(toAddToCart.data && toAddToCart.status === 200){
-      toGetProductData()
-      setTrackProductCount(1)
-      return Swal.fire({
+  };
+
+  const addToCart = async () => {
+    if (!session || !session.user) {
+      Swal.fire({
+        icon: "warning",
+        text: "You need to be logged in to add items to cart",
+        timer: 3000,
+      });
+      return;
+    }
+
+    try {
+      await axios.post(`/api/cart`, {
+        productId: productData?._id,
+        productCount: trackProductCount,
+        userId: session.user.id,  // Pass the userId from session
+        status: "CART",
+      });
+      Swal.fire({
         icon: "success",
         text: "Added to cart successfully",
-        timer: 3000
-      })
-    }else {
-      return Swal.fire({
-        icon: "warning",
-        text: toAddToCart.data.message ?? "Product cannot be added",
-        timer: 3000
-      })
+        timer: 3000,
+      });
+      setTrackProductCount(1); // Reset the count after adding to cart
+    } catch (error) {
+      Swal.fire({
+        icon: "error",
+        text: "Error adding to cart",
+        timer: 3000,
+      });
     }
+  };
+
+  if (!productData) {
+    return (
+      <div className="w-screen h-screen flex flex-col items-center justify-center bg-slate-200">
+        <p className="text-4xl font-bold capitalize text-white [text-shadow:_0_1px_0_rgb(0_0_0_/_40%)]">
+          No data available
+        </p>
+      </div>
+    );
   }
 
-  useEffect(() => {
-    toGetProductData()
-  }, [category, productId])
+  const discountedPrice = (
+    productData.cost - productData.discount >= 0
+      ? productData.cost - productData.discount
+      : 0
+  ).toFixed(2);
+
+  const discountPercentage = (
+    (productData.discount / productData.cost) * 100
+  ).toFixed(0); // Convert it to a percentage
+
+  const isOutOfStock = trackProductCount >= (productData.stockData?.stock || 0); // Check if out of stock
 
   return (
-    productData.length 
-    ? 
-    (productData.map((prodData: productOnlyInterface) => {
-        const discountedProductRate = ( prodData.discount ? prodData.cost - prodData.cost * prodData.discount : prodData.cost ).toFixed(2)
-        return (
-            <div
-            className="w-full h-full flex flex-col items-center gap-10 max-w-[1280px] self-center mt-8 overflow-hidden"
-            key={prodData._id.toString()}
-          >
-            <div className="flex flex-col lg:grid lg:grid-cols-2 w-11/12 sm:w-8/12 lg:w-full h-max">
-              <div className="w-full h-full flex items-center border-solid border-[1px] border-slate-300">
-                <Image
-                  src={prodData.image}
-                  alt=""
-                  width={200}
-                  height={200}
-                  className="w-full h-full object-cover"
-                />
-              </div>
-              <div className="flex flex-col items-center w-full h-full bg-slate-100 p-5 relative gap-8">
-                {prodData.discount ? (
-                  <div
-                    className="w-0 h-0 absolute -top-2 -right-8 lg:-top-4 lg:-right-16 origin-center rotate-45
-                    lg:border-l-[100px] border-l-[50px] border-l-transparent
-                    lg:border-b-[100px] border-b-[50px] border-b-red-500
-                    lg:border-r-[100px] border-r-[50px] border-r-transparent"
-                  >
-                    <div className="w-full h-full relative flex-items-center justify-center">
-                      <p className="absolute lg:-bottom-20 -bottom-10 lg:-left-10 -left-6 w-max grid grid-cols-1 items-center justify-center text-white lg:text-xl text-[10px] font-bold">
-                        {prodData.discount * 100} % OFF
-                      </p>
-                    </div>
-                  </div>
-                ) : null}
-                <div className="flex items-center w-full justify-between">
-                  <h1 className="capitalize text-2xl font-extrabold">
-                    {prodData.name}
-                  </h1>
-                </div>
-                <div className="flex w-full items-center gap-4">
-                  <p
-                    className={`${
-                      prodData.discount
-                        ? "line-through lg:text-xl font-normal"
-                        : "lg:text-2xl font-semibold"
-                    } text-[#222222]`}
-                  >
-                    ₹ {prodData.cost.toFixed(2)}
-                  </p>
-                  {prodData.discount ? (
-                    <p className="lg:text-2xl font-semibold">
-                      ₹{" "}
-                      {(
-                        prodData.cost -
-                        prodData.cost * prodData.discount
-                      ).toFixed(2)}
-                    </p>
-                  ) : null}
-                  <p className="capitalize">{`Per ${prodData.measurement?.length ? prodData.measurement : "Kg"}`}</p>
-                </div>
-                <div className="grid grid-cols-2 lg:flex lg:flex-row items-center gap-3 w-full justify-start h-max">
-                  <input
-                    disabled
-                    value={`₹ ${Number(discountedProductRate)*trackProductCount}`}
-                    className="bg-white h-10 px-3 w-full lg:w-1/5 font-medium text-xl"
-                  />
-                  <input
-                    disabled
-                    value={`${trackProductCount} ${prodData.measurement?.length ? prodData.measurement : "Kg"}`}
-                    className="bg-white h-10 px-3 w-full lg:w-1/5 font-medium text-xl capitalize"
-                  />
-                  <button className="h-10 w-full lg:w-[10%] text-xl font-bold bg-slate-400 text-white" onClick={decreaseProdCount}>-</button>
-                  <button className="h-10 w-full lg:w-[10%] text-xl font-bold bg-slate-400 text-white" onClick={increaseProdCount}>+</button>
-                </div>
-                <div className="w-full h-full flex flex-col items-start gap-4">
-                    <h1 className="font-bold capitalize text-lg">Description</h1>
-                    <div className="w-full h-full bg-white p-3 max-h-[250px] min-h-[200px] overflow-y-auto sm:text-base text-xs">
-                        {prodData.about}
-                    </div>
-                    <button className="flex items-center gap-3 bg-primary text-tertiary hover:bg-secondary delay-300 duration-300 p-3 mt-8 ease-in-out" onClick={addToCart}>
-                        <AiOutlineShoppingCart className="text-xl"/>
-                        <p className="text-sm">Add to cart</p>
-                    </button>
-                </div>
-              </div>
+    <div className="w-full h-full flex flex-col items-center gap-10 max-w-[1280px] self-center mt-8">
+      {/* Main Product Section */}
+      <div className="flex flex-col lg:flex-row w-11/12 sm:w-8/12 lg:w-full h-max bg-white shadow-lg rounded-lg p-6">
+        <div className="w-full h-full flex items-center justify-center border border-slate-300 rounded-lg overflow-hidden lg:w-1/2 mb-6 lg:mb-0">
+          <Image
+            src={productData.image}
+            alt={productData.name}
+            width={400}
+            height={400}
+            className="object-contain"
+          />
+        </div>
+        <div className="flex flex-col items-start w-full h-full bg-slate-100 p-8 relative gap-4 lg:w-1/2 rounded-lg">
+          {productData.discount && (
+            <div className="absolute top-4 right-4 bg-red-500 text-white font-semibold py-1 px-4 rounded-full">
+              {discountPercentage}% OFF
+            </div>
+          )}
+
+          {/* Product Name */}
+          <h1 className="capitalize text-3xl font-extrabold mb-2">
+            {productData.name}
+          </h1>
+
+          {/* Price and Measurement */}
+          <div className="flex items-center gap-4 text-lg">
+            <p className={` ${productData.discount ? "line-through text-gray-500" : "text-black"}`}>
+              ₹ {productData.cost.toFixed(2)}
+            </p>
+            {productData.discount && (
+              <p className="text-green-600 font-semibold">
+                ₹ {discountedPrice}
+              </p>
+            )}
+            <p className="capitalize text-sm text-gray-600">
+              Per {productData.measurement || "Kg"}
+            </p>
+          </div>
+
+          {/* Quantity and Total Price */}
+          <div className="flex items-center gap-3 mt-4">
+            <input
+              disabled
+              value={`₹ ${(Number(discountedPrice) * trackProductCount).toFixed(2)}`}
+              className="bg-white h-10 px-3 w-full max-w-[150px] text-xl font-medium border rounded-lg shadow-sm text-center"
+            />
+            <div className="flex items-center gap-2">
+              <button
+                className="h-10 w-10 text-xl font-bold bg-slate-400 text-white rounded-lg"
+                onClick={() => handleProductCountChange("decrease")}
+              >
+                -
+              </button>
+              <input
+                disabled
+                value={trackProductCount}
+                className="bg-white h-10 w-12 text-xl text-center font-semibold rounded-lg"
+              />
+              <button
+                className="h-10 w-10 text-xl font-bold bg-slate-400 text-white rounded-lg"
+                onClick={() => handleProductCountChange("increase")}
+              >
+                +
+              </button>
             </div>
           </div>
-        )
-    }))
-    : 
-    <div className="w-screen h-screen flex flex-col items-center justify-center bg-slate-200">
-        <p className="text-4xl font-bold capitalize text-white [text-shadow:_0_1px_0_rgb(0_0_0_/_40%)]">No data available</p>
-    </div>
-  )
 
+          {/* Out of Stock Message */}
+          {isOutOfStock && (
+            <p className="text-red-600 font-semibold text-lg mt-3">Out of Stock</p>
+          )}
+
+          {/* Add to Cart Button */}
+          <button
+            className="flex items-center gap-3 bg-blue-600 text-white hover:bg-blue-700 transition-all p-4 mt-8 rounded-lg shadow-md w-full justify-center text-lg"
+            onClick={addToCart}
+            disabled={isOutOfStock} // Disable button when out of stock
+          >
+            <AiOutlineShoppingCart className="text-xl" />
+            <p>Add to Cart</p>
+          </button>
+        </div>
+      </div>
+
+      {/* Related Products Section */}
+      <div className="w-full max-w-[1280px] mt-8">
+        <h2 className="text-2xl font-bold mb-4">Related Products</h2>
+        <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-6">
+          {relatedProducts.map((relatedProduct) => (
+            <div className="p-4 bg-white shadow-lg rounded-lg" key={relatedProduct._id.toString()}>
+              <Link href={`/products/${category}/${relatedProduct._id}`}>
+                <Image
+                  src={relatedProduct.image}
+                  alt={relatedProduct.name}
+                  width={200}
+                  height={200}
+                  className="object-contain w-full"
+                />
+                <h3 className="mt-4 text-xl font-bold">{relatedProduct.name}</h3>
+                <p className="mt-2 text-lg font-semibold text-green-600">
+                  ₹ {(relatedProduct.cost - (relatedProduct.cost * (relatedProduct.discount / 100))).toFixed(2)}
+                </p>
+              </Link>
+            </div>
+          ))}
+        </div>
+      </div>
+    </div>
+  );
 };
 
 export default IndividualProductView;

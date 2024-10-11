@@ -1,4 +1,4 @@
-"use client";
+// pages/product/add.tsx
 
 import { FormEvent, useState } from "react";
 
@@ -15,7 +15,7 @@ const AddProductForm = () => {
     try {
       const response = await fetch("/api/product", {
         method: "POST",
-        body: formData, // Send formData directly (includes file upload)
+        body: formData,
       });
 
       const data = await response.json();
@@ -38,94 +38,68 @@ const AddProductForm = () => {
       <form
         onSubmit={onSubmit}
         encType="multipart/form-data"
-        className="bg-white p-8 shadow-md rounded-lg w-full max-w-lg"
+        className="bg-white p-8 shadow-md rounded-lg w-full max-w-xl space-y-6"
       >
-        <h2 className="text-2xl font-bold text-center text-gray-700 mb-6">
-          Add Product
+        <h2 className="text-xl font-bold text-center text-gray-700 mb-4">
+          Add New Product
         </h2>
 
-        {/* Product Name */}
-        <div className="mb-4">
-          <label className="block text-sm font-semibold text-gray-700">
-            Product Name
-          </label>
-          <input
-            type="text"
-            name="name"
-            className="text-lg w-full border border-gray-300 h-12 px-4 py-2 rounded-lg focus:ring-2 focus:ring-blue-500 outline-none"
-            placeholder="Eg: Tomato"
-            required
-          />
+        {/* Product Form Fields */}
+        <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+          <div className="mb-3">
+            <label className="block text-sm text-gray-600">Product Name</label>
+            <input type="text" name="name" className="input-field" placeholder="Product Name" required />
+          </div>
+
+          <div className="mb-3">
+            <label className="block text-sm text-gray-600">Category</label>
+            <select name="category" className="input-field" required>
+              <option value="">Select Category</option>
+              <option value="Fruits">Fruits</option>
+              <option value="Vegetables">Vegetables</option>
+            </select>
+          </div>
         </div>
 
-        {/* Product Price */}
-        <div className="mb-4">
-          <label className="block text-sm font-semibold text-gray-700">
-            Product Price
-          </label>
-          <input
-            type="number"
-            name="cost"
-            className="text-lg w-full border border-gray-300 h-12 px-4 py-2 rounded-lg focus:ring-2 focus:ring-blue-500 outline-none"
-            placeholder="Eg: 50"
-            required
-          />
+        <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+          <div className="mb-3">
+            <label className="block text-sm text-gray-600">Price</label>
+            <input type="number" name="cost" className="input-field" placeholder="Price" required />
+          </div>
+
+          <div className="mb-3">
+            <label className="block text-sm text-gray-600">Discount</label>
+            <input type="number" name="discount" className="input-field" placeholder="Discount" />
+          </div>
         </div>
 
-        {/* Product Discount */}
-        <div className="mb-4">
-          <label className="block text-sm font-semibold text-gray-700">
-            Product Discount
-          </label>
-          <input
-            type="number"
-            name="discount"
-            className="text-lg w-full border border-gray-300 h-12 px-4 py-2 rounded-lg focus:ring-2 focus:ring-blue-500 outline-none"
-            placeholder="Eg: 10"
-          />
+        <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+          <div className="mb-3">
+            <label className="block text-sm text-gray-600">Image</label>
+            <input type="file" name="image" className="input-field" required />
+          </div>
+
+          <div className="mb-3">
+            <label className="block text-sm text-gray-600">Stock</label>
+            <input type="number" name="stock" className="input-field" placeholder="Stock" required />
+          </div>
         </div>
 
-        {/* Product Image */}
-        <div className="mb-4">
-          <label className="block text-sm font-semibold text-gray-700">
-            Product Image
-          </label>
-          <input
-            type="file"
-            name="image"
-            className="w-full border border-gray-300 h-12 px-4 py-2 rounded-lg"
-            required
-          />
+        <div className="mb-3">
+          <label className="block text-sm text-gray-600">Description</label>
+          <textarea name="about" className="input-field h-24" placeholder="Describe the product" required />
         </div>
 
-        {/* Product Description */}
-        <div className="mb-4">
-          <label className="block text-sm font-semibold text-gray-700">
-            Product Description
-          </label>
-          <textarea
-            name="about"
-            className="w-full border border-gray-300 rounded-lg px-4 py-2 h-24 resize-none focus:ring-2 focus:ring-blue-500 outline-none"
-            placeholder="Describe the product..."
-            required
-          />
+        <div className="mb-3">
+          <label className="block text-sm text-gray-600">Measurement (Optional)</label>
+          <input type="text" name="measurement" className="input-field" placeholder="e.g., Kg, Liter, Pieces" />
         </div>
 
-        {/* Submit Button */}
-        <button
-          type="submit"
-          className={`w-full bg-blue-500 text-white font-semibold py-3 rounded-lg hover:bg-blue-600 transition-all ${
-            isSubmitting ? "opacity-50 cursor-not-allowed" : ""
-          }`}
-          disabled={isSubmitting}
-        >
+        <button type="submit" className="btn-primary" disabled={isSubmitting}>
           {isSubmitting ? "Submitting..." : "Submit"}
         </button>
 
-        {/* Display message */}
-        {message && (
-          <p className="mt-4 text-center text-sm text-red-500">{message}</p>
-        )}
+        {message && <p className="mt-3 text-center text-sm text-red-500">{message}</p>}
       </form>
     </div>
   );
