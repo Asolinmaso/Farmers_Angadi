@@ -6,7 +6,7 @@ import { CommonApplicationLogo } from "../../Atoms/LogoImage";
 import SearchedDataListed from "@/components/Molecules/Searched";
 import { usePathname } from "next/navigation";
 import { useAuth } from "@/components/Wrapper/universalState";
-import { useState, useEffect, useCallback, useMemo } from "react";
+import { useState, useMemo } from "react";
 import Link from "next/link";
 import { signOut } from "next-auth/react";
 import Swal from "sweetalert2";
@@ -18,50 +18,23 @@ const CommonNavBar = () => {
   const pathname = usePathname();
   const { selectedUserData } = useAuth() as { selectedUserData: IUsersDocument };
 
-  const [isFixed, setIsFixed] = useState(false);
   const [isOpen, setIsOpen] = useState(false);
   const [productName, setProductname] = useState("");
 
   const isAuthenticationPage = pathname === "/authentication";
-
-  const handleScroll = useCallback(() => {
-    const scrollPosition = window.scrollY;
-    const scrollThreshold = 120;
-
-    if (scrollPosition > scrollThreshold && !isAuthenticationPage) {
-      setIsFixed(true);
-    } else {
-      setIsFixed(false);
-    }
-  }, [isAuthenticationPage]);
-
-  useEffect(() => {
-    window.addEventListener("scroll", handleScroll);
-    return () => {
-      window.removeEventListener("scroll", handleScroll);
-    };
-  }, [handleScroll]);
-
   const clearSearchText = () => setProductname("");
 
-  const triggerWarnPopup = useCallback(() => {
-    Swal.fire({
-      icon: "warning",
-      text: "Please login to access cart",
-      timer: 3000,
-    });
-  }, []);
-
-  const isUserAuthenticated = useMemo(() => !!selectedUserData?.email, [selectedUserData]);
+  const isUserAuthenticated = useMemo(
+    () => !!selectedUserData?.email,
+    [selectedUserData]
+  );
 
   return (
     <>
       <nav
-        className={`flex flex-row items-center justify-center w-full py-4 transition-all duration-300 ease-in-out bg-primary shadow-md ${
-          isFixed ? "fixed top-0 z-50 w-full bg-opacity-90 backdrop-blur-sm shadow-lg" : ""
-        }`}
+        className={`sticky top-0 z-50 bg-primary shadow-md transition-all duration-300 ease-in-out backdrop-blur-md`}
       >
-        <div className="sm:px-6 xl:p-0 flex flex-row items-center justify-between w-full max-w-[1280px] relative">
+        <div className="flex flex-row items-center justify-between w-full max-w-[1280px] mx-auto p-4">
           <span className="xl:block hidden">
             <CommonApplicationLogo />
           </span>

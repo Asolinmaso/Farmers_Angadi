@@ -34,3 +34,12 @@
     100% { transform: rotate(360deg); }
   }
   
+  .custom-input {
+    @apply w-full px-4 py-2 mt-1 border-2 border-gray-300 rounded-md focus:ring-2 
+           focus:ring-indigo-400 focus:border-indigo-500 transition-all duration-300 outline-none;
+  }
+  .btn-primary {
+    @apply w-full py-3 bg-indigo-600 text-white font-semibold text-lg rounded-lg 
+           hover:bg-indigo-700 transition-all duration-300 ease-in-out;
+  }
+    

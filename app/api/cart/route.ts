@@ -76,32 +76,47 @@ async function getCartItems(req: NextRequest) {
 // Add item to cart
 import { Types } from "mongoose"; // Import Types from mongoose
 
+// Add item to cart or increment if already exists
 async function addToCart(req: NextRequest) {
   await connectMongo();
   try {
-    const body = await req.json(); // Parse the request body
-
+    const body = await req.json();
     const { productId, productCount, userId, status } = body;
 
-    // Check if userId is a valid ObjectId string before converting
+    // Ensure userId is a valid ObjectId
     if (!Types.ObjectId.isValid(userId)) {
       return NextResponse.json({ error: "Invalid user ID" }, { status: 400 });
     }
 
-    // Safely convert the userId to an ObjectId
-    const cartItem = new CartModel({
-      productId,
-      productCount,
-      userId: new Types.ObjectId(userId), // Ensure userId is a valid ObjectId string
-      status,
+    // Check if the product already exists in the user's cart
+    const existingCartItem = await CartModel.findOne({
+      userId: new Types.ObjectId(userId),
+      productId: new Types.ObjectId(productId),
     });
 
-    await cartItem.save();
-    return NextResponse.json(cartItem);
+    if (existingCartItem) {
+      // If the product exists, increment the product count
+      existingCartItem.productCount += productCount;
+      await existingCartItem.save();
+      return NextResponse.json(existingCartItem);
+    } else {
+      // If it doesn't exist, create a new cart item
+      const newCartItem = new CartModel({
+        productId,
+        productCount,
+        userId: new Types.ObjectId(userId),
+        status,
+      });
+
+      await newCartItem.save();
+      return NextResponse.json(newCartItem);
+    }
   } catch (error) {
+    console.error("Error adding to cart:", error);
     return NextResponse.json({ error: "Failed to add item to cart" }, { status: 500 });
   }
 }
+
 
 
 // Update cart item

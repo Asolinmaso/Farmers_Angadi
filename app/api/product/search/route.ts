@@ -9,6 +9,7 @@ export async function GET(req: NextRequest) {
 
     const url = new URL(req.url);
     const productName = url.searchParams.get("productName");
+console.log(productName,"se");
 
     if (!productName) {
       return NextResponse.json({ data: [] }, { status: 400, statusText: "Product name is required." });

@@ -17,6 +17,13 @@ const CartOrganelles = () => {
   const [deleteInitiated, setDeleteInitiated] = useState(false);
   const [changesRequestedcards, setChangesRequestCards] = useState<CartItemInterface[]>([]);
 
+  // Calculate total cart amount
+  const totalCartAmount = cartItems.reduce((acc, item) => {
+    const product = item.productDetails;
+    const itemTotal = (product.cost - product.discount) * item.productCount;
+    return acc + itemTotal;
+  }, 0);
+
   // Fetch cart items for the current user
   const fetchData = async () => {
     if (!session?.user?.id) return; // Return early if no user ID in session
@@ -24,19 +31,14 @@ const CartOrganelles = () => {
     try {
       setCartLoading(true);
 
-      // Fetch cart items
       const fetchCartData = await axios.get(`/api/cart?userId=${session.user.id}`);
-
-      // Log response for debugging
       console.log("Fetched Cart Data: ", fetchCartData.data); 
 
-      // Check if the response contains items
       if (fetchCartData.data?.items?.length) {
         setCartItems(fetchCartData.data.items); // Set cart items
         setEditCard(false);
       } else {
-        // If no cart items, clear state and show empty cart message
-        setCartItems([]);
+        setCartItems([]); // Clear cart if no items found
       }
 
       setCartLoading(false);
@@ -46,7 +48,6 @@ const CartOrganelles = () => {
     }
   };
 
-  // Trigger fetching cart items when user session is available or deletion occurs
   useEffect(() => {
     if (session?.user?.id && (!cartItems.length || deleteInitiated)) {
       fetchData();
@@ -54,7 +55,6 @@ const CartOrganelles = () => {
     }
   }, [session, deleteInitiated]);
 
-  // Handle checkout
   const onCheckout = () => {
     if (editCard) {
       Swal.fire({
@@ -81,7 +81,6 @@ const CartOrganelles = () => {
     });
   };
 
-  // Save changes requested for cart items
   const onEditRequestedChanges = async () => {
     const promises = changesRequestedcards.map(async (item) => {
       const response = await axios.put(`/api/cart`, {
@@ -137,6 +136,13 @@ const CartOrganelles = () => {
             ))
           )}
         </div>
+
+        {/* Total Cart Amount */}
+        {cartItems.length > 0 && (
+          <div className="w-full max-w-[1024px] flex justify-end items-center">
+            <p className="text-2xl font-bold">Total: ₹ {totalCartAmount.toFixed(2)}</p>
+          </div>
+        )}
 
         {/* Action Buttons */}
         <div className="w-full flex flex-col items-center gap-3">
