@@ -5,7 +5,6 @@ import axios from "axios";
 import Image from "next/image";
 import Link from "next/link";
 import { productOnlyInterface } from "@/utils/interface";
-import { AiOutlineShoppingCart } from "react-icons/ai";
 import Swal from "sweetalert2";
 import { useSession } from "next-auth/react";
 
@@ -15,8 +14,12 @@ const IndividualProductView = ({
   params: { productId: string; category: string };
 }) => {
   const { data: session } = useSession();
-  const [productData, setProductData] = useState<productOnlyInterface | null>(null);
-  const [relatedProducts, setRelatedProducts] = useState<productOnlyInterface[]>([]);
+  const [productData, setProductData] = useState<productOnlyInterface | null>(
+    null
+  );
+  const [relatedProducts, setRelatedProducts] = useState<
+    productOnlyInterface[]
+  >([]);
   const [trackProductCount, setTrackProductCount] = useState(1);
 
   const { productId, category } = params;
@@ -39,19 +42,29 @@ const IndividualProductView = ({
 
   const fetchRelatedProducts = async () => {
     try {
-      const response = await axios.get(`/api/product?category=${category}&limit=4`);
+      const response = await axios.get(
+        `/api/product?category=${category}&limit=4`
+      );
       if (response.data && response.data.data.length) {
-        setRelatedProducts(response.data.data.filter((p: productOnlyInterface) => p._id.toString() !== productId));
+        setRelatedProducts(
+          response.data.data.filter(
+            (p: productOnlyInterface) => p._id.toString() !== productId
+          )
+        );
       }
     } catch (error) {
       console.error("Error fetching related products:", error.message);
     }
   };
 
-  const handleProductCountChange = (operation: 'increase' | 'decrease') => {
-    setTrackProductCount(prev => {
-      if (operation === 'increase' && prev < (productData?.stockData.stock || 99)) return prev + 1; // Limit to stock count
-      if (operation === 'decrease' && prev > 1) return prev - 1;
+  const handleProductCountChange = (operation: "increase" | "decrease") => {
+    setTrackProductCount((prev) => {
+      if (
+        operation === "increase" &&
+        prev < (productData?.stockData.stock || 99)
+      )
+        return prev + 1; // Limit to stock count
+      if (operation === "decrease" && prev > 1) return prev - 1;
       return prev;
     });
   };
@@ -70,7 +83,7 @@ const IndividualProductView = ({
       await axios.post(`/api/cart`, {
         productId: productData?._id,
         productCount: trackProductCount,
-        userId: session.user.id,  // Pass the userId from session
+        userId: session.user.id, // Pass the userId from session
         status: "CART",
       });
       Swal.fire({
@@ -105,7 +118,8 @@ const IndividualProductView = ({
   ).toFixed(2);
 
   const discountPercentage = (
-    (productData.discount / productData.cost) * 100
+    (productData.discount / productData.cost) *
+    100
   ).toFixed(0); // Convert it to a percentage
 
   const isOutOfStock = trackProductCount >= (productData.stockData?.stock || 0); // Check if out of stock
@@ -137,7 +151,13 @@ const IndividualProductView = ({
 
           {/* Price and Measurement */}
           <div className="flex items-center gap-4 text-lg">
-            <p className={` ${productData.discount ? "line-through text-gray-500" : "text-black"}`}>
+            <p
+              className={` ${
+                productData.discount
+                  ? "line-through text-gray-500"
+                  : "text-black"
+              }`}
+            >
               ₹ {productData.cost.toFixed(2)}
             </p>
             {productData.discount && (
@@ -154,7 +174,9 @@ const IndividualProductView = ({
           <div className="flex items-center gap-3 mt-4">
             <input
               disabled
-              value={`₹ ${(Number(discountedPrice) * trackProductCount).toFixed(2)}`}
+              value={`₹ ${(Number(discountedPrice) * trackProductCount).toFixed(
+                2
+              )}`}
               className="bg-white h-10 px-3 w-full max-w-[150px] text-xl font-medium border rounded-lg shadow-sm text-center"
             />
             <div className="flex items-center gap-2">
@@ -180,7 +202,9 @@ const IndividualProductView = ({
 
           {/* Out of Stock Message */}
           {isOutOfStock && (
-            <p className="text-red-600 font-semibold text-lg mt-3">Out of Stock</p>
+            <p className="text-red-600 font-semibold text-lg mt-3">
+              Out of Stock
+            </p>
           )}
 
           {/* Add to Cart Button */}
@@ -189,7 +213,17 @@ const IndividualProductView = ({
             onClick={addToCart}
             disabled={isOutOfStock} // Disable button when out of stock
           >
-            <AiOutlineShoppingCart className="text-xl" />
+            <svg
+              xmlns="http://www.w3.org/2000/svg"
+              width="2em"
+              height="2em"
+              viewBox="0 0 24 24"
+            >
+              <path
+                fill="blue"
+                d="M17 18a2 2 0 0 1 2 2a2 2 0 0 1-2 2a2 2 0 0 1-2-2c0-1.11.89-2 2-2M1 2h3.27l.94 2H20a1 1 0 0 1 1 1c0 .17-.05.34-.12.5l-3.58 6.47c-.34.61-1 1.03-1.75 1.03H8.1l-.9 1.63l-.03.12a.25.25 0 0 0 .25.25H19v2H7a2 2 0 0 1-2-2c0-.35.09-.68.24-.96l1.36-2.45L3 4H1zm6 16a2 2 0 0 1 2 2a2 2 0 0 1-2 2a2 2 0 0 1-2-2c0-1.11.89-2 2-2m9-7l2.78-5H6.14l2.36 5z"
+              />
+            </svg>
             <p>Add to Cart</p>
           </button>
         </div>
@@ -200,7 +234,10 @@ const IndividualProductView = ({
         <h2 className="text-2xl font-bold mb-4">Related Products</h2>
         <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-6">
           {relatedProducts.map((relatedProduct) => (
-            <div className="p-4 bg-white shadow-lg rounded-lg" key={relatedProduct._id.toString()}>
+            <div
+              className="p-4 bg-white shadow-lg rounded-lg"
+              key={relatedProduct._id.toString()}
+            >
               <Link href={`/products/${category}/${relatedProduct._id}`}>
                 <Image
                   src={relatedProduct.image}
@@ -209,9 +246,15 @@ const IndividualProductView = ({
                   height={200}
                   className="object-contain w-full"
                 />
-                <h3 className="mt-4 text-xl font-bold">{relatedProduct.name}</h3>
+                <h3 className="mt-4 text-xl font-bold">
+                  {relatedProduct.name}
+                </h3>
                 <p className="mt-2 text-lg font-semibold text-green-600">
-                  ₹ {(relatedProduct.cost - (relatedProduct.cost * (relatedProduct.discount / 100))).toFixed(2)}
+                  ₹{" "}
+                  {(
+                    relatedProduct.cost -
+                    relatedProduct.cost * (relatedProduct.discount / 100)
+                  ).toFixed(2)}
                 </p>
               </Link>
             </div>

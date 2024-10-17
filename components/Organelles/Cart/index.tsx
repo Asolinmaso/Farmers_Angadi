@@ -7,7 +7,6 @@ import Swal from "sweetalert2";
 import Link from "next/link";
 import IndividualCartProductCard from "@/components/Molecules/CartCard";
 import { CartItemInterface } from "@/utils/interface";
-import { FaSpinner } from "react-icons/fa";
 
 const CartOrganelles = () => {
   const { data: session } = useSession(); // Use session to get user info
@@ -15,7 +14,9 @@ const CartOrganelles = () => {
   const [cartLoading, setCartLoading] = useState(true);
   const [editCard, setEditCard] = useState(false);
   const [deleteInitiated, setDeleteInitiated] = useState(false);
-  const [changesRequestedcards, setChangesRequestCards] = useState<CartItemInterface[]>([]);
+  const [changesRequestedcards, setChangesRequestCards] = useState<
+    CartItemInterface[]
+  >([]);
 
   // Calculate total cart amount
   const totalCartAmount = cartItems.reduce((acc, item) => {
@@ -31,8 +32,10 @@ const CartOrganelles = () => {
     try {
       setCartLoading(true);
 
-      const fetchCartData = await axios.get(`/api/cart?userId=${session.user.id}`);
-      console.log("Fetched Cart Data: ", fetchCartData.data); 
+      const fetchCartData = await axios.get(
+        `/api/cart?userId=${session.user.id}`
+      );
+      console.log("Fetched Cart Data: ", fetchCartData.data);
 
       if (fetchCartData.data?.items?.length) {
         setCartItems(fetchCartData.data.items); // Set cart items
@@ -109,13 +112,31 @@ const CartOrganelles = () => {
   return (
     <div className="flex flex-col items-center w-full h-full">
       <div className="flex items-center flex-col max-w-[1280px] w-full h-full p-6 gap-10">
-        <h1 className="text-xl font-semibold text-[#333333] h-max max-w-[1024px] w-full uppercase">Cart</h1>
+        <h1 className="text-xl font-semibold text-[#333333] h-max max-w-[1024px] w-full uppercase">
+          Cart
+        </h1>
 
         {/* Cart Items Section */}
         <div className="flex flex-col items-center justify-start h-full w-full relative overflow-y-scroll min-h-[50vh]">
           {cartLoading && (
             <div className="absolute w-full h-full flex flex-col items-center justify-center bg-white/60">
-              <FaSpinner className="animate-spin" />
+              <svg
+                xmlns="http://www.w3.org/2000/svg"
+                width="1em"
+                height="1em"
+                viewBox="0 0 24 24"
+                className="animate-spin"
+              >
+                <g fill="green">
+                  <path
+                    fill-rule="evenodd"
+                    d="M12 19a7 7 0 1 0 0-14a7 7 0 0 0 0 14m0 3c5.523 0 10-4.477 10-10S17.523 2 12 2S2 6.477 2 12s4.477 10 10 10"
+                    clip-rule="evenodd"
+                    opacity="0.2"
+                  />
+                  <path d="M2 12C2 6.477 6.477 2 12 2v3a7 7 0 0 0-7 7z" />
+                </g>
+              </svg>
             </div>
           )}
 
@@ -140,21 +161,24 @@ const CartOrganelles = () => {
         {/* Total Cart Amount */}
         {cartItems.length > 0 && (
           <div className="w-full max-w-[1024px] flex justify-end items-center">
-            <p className="text-2xl font-bold">Total: ₹ {totalCartAmount.toFixed(2)}</p>
+            <p className="text-2xl font-bold">
+              Total: ₹ {totalCartAmount.toFixed(2)}
+            </p>
           </div>
         )}
 
         {/* Action Buttons */}
         <div className="w-full flex flex-col items-center gap-3">
           <div className="flex items-center gap-4">
-            <button className="bg-blue-500 text-white px-5 py-3 rounded-sm min-w-[150px]" onClick={onCheckout}>
+            <button
+              className="bg-blue-500 text-white px-5 py-3 rounded-sm min-w-[150px]"
+              onClick={onCheckout}
+            >
               Checkout
             </button>
           </div>
           <p className="text-sm text-[#333333]">(or)</p>
-          <Link href={`/products`}>
-            Keep Shopping
-          </Link>
+          <Link href={`/products`}>Keep Shopping</Link>
         </div>
       </div>
     </div>

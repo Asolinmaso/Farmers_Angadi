@@ -1,12 +1,4 @@
 "use client";
-
-import {
-  AiOutlineMail,
-  AiFillLock,
-  AiFillEye,
-  AiFillEyeInvisible,
-  AiOutlineLoading3Quarters,
-} from "react-icons/ai";
 import { useState, useEffect } from "react";
 import { useSearchParams, useRouter } from "next/navigation";
 import { signIn } from "next-auth/react";
@@ -24,7 +16,7 @@ const LoginForm = () => {
 
   const searchParams = useSearchParams();
   const callbackUrl = searchParams.get("callbackUrl");
-  const router = useRouter(); // Use Next.js router
+  const router = useRouter();
 
   const onChangeFn = (e) => {
     const { name, value } = e.target;
@@ -33,7 +25,7 @@ const LoginForm = () => {
 
   useEffect(() => {
     const isUserData = Object.values(userData).every((el) => Boolean(el));
-    isUserData ? setDisabled(false) : setDisabled(true);
+    setDisabled(!isUserData);
   }, [userData]);
 
   const { userIdentification, password } = userData;
@@ -41,30 +33,23 @@ const LoginForm = () => {
   const onSubmit = async () => {
     setSubmit(true);
     setDisabled(true);
-    setError(""); // Clear previous errors
+    setError("");
     try {
       setLoading(true);
-
       const response = await signIn("credentials", {
         emailAddress: userData.userIdentification,
         password: userData.password,
-        redirect: false, // Prevent automatic navigation
+        redirect: false,
       });
 
       if (response?.error) {
         setError("Email or password is incorrect");
       } else {
-        setError("");
-        // Navigate to home page on successful login
-        router.push(callbackUrl || "/"); // Redirect to home or callbackUrl
+        router.push(callbackUrl || "/");
       }
-
-      setLoading(false);
     } catch (error) {
       console.error("Error during login:", error);
       setError("Something went wrong. Please try again.");
-      setLoading(false);
-      setSubmit(false);
     } finally {
       setLoading(false);
       setSubmit(false);
@@ -79,69 +64,96 @@ const LoginForm = () => {
   }, [error]);
 
   return (
-    <div className="w-4/5 flex flex-col items-start justify-between p-4 max-h-[650px] gap-10">
-      <div className="font-lightbold text-3xl capitalize text-center self-center flex flex-col">
-        <span className="xl:text-4xl text-3xl">Farmers Angadi</span>
-        <span className="text-secondary xl:text-3xl text-2xl">
-          welcomes you
-        </span>
+    <div className="container mx-auto max-w-lg px-4 py-8">
+      <div className="text-center mb-8">
+        <h1 className="text-4xl font-semibold">Farmers Angadi</h1>
+        <p className="text-secondary text-2xl">welcomes you</p>
       </div>
-      <section className="flex flex-col items-center justify-between w-full h-full lg:gap-8 gap-6">
-        {error && (
-          <p className="text-red-600 text-center w-full lg:w-3/4">
-            {error}
-          </p>
-        )}
+      {error && (
+        <p className="text-red-600 text-center mb-4">{error}</p>
+      )}
 
-        <div className="lg:w-3/4 w-full flex flex-row items-center justify-center bg-tertiary lg:rounded-xl">
-          <AiOutlineMail className="w-20" />
+      <div className="space-y-6">
+        <div className="relative">
           <input
             onChange={onChangeFn}
             value={userIdentification}
             name="userIdentification"
-            className="w-full h-14 outline-0 pr-6 lg:rounded-xl"
+            className="w-full h-14 pl-12 pr-4 border rounded-lg focus:ring-2 focus:ring-secondary"
             placeholder="Enter Email / Username"
           />
+          <svg
+            xmlns="http://www.w3.org/2000/svg"
+            className="absolute left-4 top-1/2 transform -translate-y-1/2 w-6 h-6 text-gray-400"
+            viewBox="0 0 24 24"
+          >
+            <path
+              fill="currentColor"
+              d="M20 4H4a2 2 0 0 0-2 2v12a2 2 0 0 0 2 2h16a2 2 0 0 0 2-2V6a2 2 0 0 0-2-2zm-10 2a4 4 0 0 1 4 4H6a4 4 0 0 1 4-4zm0 10H6v-2h4v2zm8-2h-4v2h4v-2zm-8-4H6v-2h4v2zm8 0h-4v-2h4v2z"
+            />
+          </svg>
         </div>
 
-        <div className="lg:w-3/4 w-full flex flex-row items-center justify-center bg-tertiary lg:rounded-xl">
-          <AiFillLock className="w-20" />
+        <div className="relative">
           <input
             onChange={onChangeFn}
             value={password}
             name="password"
-            className="w-full h-14 outline-0 pr-6 lg:rounded-xl"
-            placeholder="Enter Password"
             type={showPassword ? "text" : "password"}
+            className="w-full h-14 pl-12 pr-4 border rounded-lg focus:ring-2 focus:ring-secondary"
+            placeholder="Enter Password"
           />
-          {showPassword ? (
-            <AiFillEyeInvisible
-              className="w-20 cursor-pointer"
-              onClick={() => setShowPassword(!showPassword)}
+          <svg
+            xmlns="http://www.w3.org/2000/svg"
+            className="absolute left-4 top-1/2 transform -translate-y-1/2 w-6 h-6 text-gray-400"
+            viewBox="0 0 24 24"
+            onClick={() => setShowPassword(!showPassword)}
+            role="button"
+          >
+            <path
+              fill="currentColor"
+              d={`${
+                showPassword
+                  ? "M12 19a7 7 0 1 0 0-14a7 7 0 0 0 0 14z"
+                  : "M12 5c4.074 0 7.38 2.443 8.919 6C17.38 16.557 14.074 19 12 19s-5.38-2.443-6.919-6C6.62 7.443 9.926 5 12 5z"
+              }`}
             />
-          ) : (
-            <AiFillEye
-              className="w-20 cursor-pointer"
-              onClick={() => setShowPassword(!showPassword)}
-            />
-          )}
+          </svg>
         </div>
 
         <button
-          className={`lg:w-3/5 w-3/4 font-bold p-4 lg:rounded-xl flex items-center justify-center gap-5 ${
+          className={`w-full h-14 rounded-lg font-semibold ${
             disabled
-              ? "cursor-not-allowed bg-[#e9e9e9] text-tertiary"
-              : "cursor-pointer bg-primary hover:bg-tertiary hover:text-secondary duration-300 focus:ring-[1px] focus:ring-secondary text-tertiary"
+              ? "bg-gray-300 cursor-not-allowed"
+              : "bg-primary hover:bg-secondary text-white transition"
           }`}
           onClick={onSubmit}
           disabled={disabled}
         >
-          Login
           {loading ? (
-            <AiOutlineLoading3Quarters className="animate-spin text-xl" />
-          ) : null}
+            <svg
+              xmlns="http://www.w3.org/2000/svg"
+              className="animate-spin mx-auto h-6 w-6"
+              viewBox="0 0 24 24"
+            >
+              <circle
+                cx="12"
+                cy="12"
+                r="10"
+                stroke="currentColor"
+                strokeWidth="4"
+                fill="none"
+              />
+              <path
+                fill="currentColor"
+                d="M4 12a8 8 0 1 1 16 0H4z"
+              />
+            </svg>
+          ) : (
+            "Login"
+          )}
         </button>
-      </section>
+      </div>
     </div>
   );
 };

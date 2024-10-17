@@ -9,14 +9,12 @@ import { useAuth } from "@/components/Wrapper/universalState";
 import { useState, useMemo } from "react";
 import Link from "next/link";
 import { signOut } from "next-auth/react";
-import Swal from "sweetalert2";
-import { GiHamburgerMenu } from "react-icons/gi";
-import { IoMdClose } from "react-icons/io";
-import { AiOutlineShoppingCart, AiOutlineSearch } from "react-icons/ai";
 
 const CommonNavBar = () => {
   const pathname = usePathname();
-  const { selectedUserData } = useAuth() as { selectedUserData: IUsersDocument };
+  const { selectedUserData } = useAuth() as {
+    selectedUserData: IUsersDocument;
+  };
 
   const [isOpen, setIsOpen] = useState(false);
   const [productName, setProductname] = useState("");
@@ -52,12 +50,40 @@ const CommonNavBar = () => {
                 />
                 <button className="absolute right-0 h-[2.5em] px-2">
                   {!productName.length ? (
-                    <AiOutlineSearch className="text-slate-500 text-xl font-bold" />
+                    <svg
+                      xmlns="http://www.w3.org/2000/svg"
+                      width="1em"
+                      height="1em"
+                      viewBox="0 0 24 24"
+                      fill="green"
+                      className="text-slate-500 text-xl font-bold"
+                    >
+                      <g>
+                        <path
+                          fillRule="evenodd"
+                          d="M12 19a7 7 0 1 0 0-14a7 7 0 0 0 0 14m0 3c5.523 0 10-4.477 10-10S17.523 2 12 2S2 6.477 2 12s4.477 10 10 10"
+                          clipRule="evenodd"
+                          opacity="0.2"
+                        />
+                        <path d="M2 12C2 6.477 6.477 2 12 2v3a7 7 0 0 0-7 7z" />
+                      </g>
+                    </svg>
                   ) : (
-                    <IoMdClose
+                    <svg
+                      xmlns="http://www.w3.org/2000/svg"
+                      width="1em"
+                      height="1em"
+                      viewBox="0 0 24 24"
+                      fill="red"
                       className="text-slate-500 text-xl font-bold cursor-pointer"
                       onClick={clearSearchText}
-                    />
+                    >
+                      <path
+                        d="M18 6L6 18M6 6l12 12"
+                        stroke="currentColor"
+                        strokeWidth="2"
+                      />
+                    </svg>
                   )}
                 </button>
               </div>
@@ -85,7 +111,18 @@ const CommonNavBar = () => {
                 <>
                   <li>
                     <Link href="/cart">
-                      <AiOutlineShoppingCart className="text-white text-sm bg-secondary rounded-full w-10 h-10 p-2 duration-300 hover:bg-tertiary hover:text-secondary" />
+                      <svg
+                        xmlns="http://www.w3.org/2000/svg"
+                        width="2em"
+                        height="2em"
+                        viewBox="0 0 24 24"
+                        className="bg-secondary rounded-full w-10 h-10 p-2 duration-300 hover:bg-tertiary hover:text-secondary"
+                      >
+                        <path
+                          fill="green"
+                          d="M17 18c-1.11 0-2 .89-2 2a2 2 0 0 0 2 2a2 2 0 0 0 2-2a2 2 0 0 0-2-2M1 2v2h2l3.6 7.59l-1.36 2.45c-.15.28-.24.61-.24.96a2 2 0 0 0 2 2h12v-2H7.42a.25.25 0 0 1-.25-.25q0-.075.03-.12L8.1 13h7.45c.75 0 1.41-.42 1.75-1.03l3.58-6.47c.07-.16.12-.33.12-.5a1 1 0 0 0-1-1H5.21l-.94-2M7 18c-1.11 0-2 .89-2 2a2 2 0 0 0 2 2a2 2 0 0 0 2-2a2 2 0 0 0-2-2"
+                        />
+                      </svg>
                     </Link>
                   </li>
                   <li>
@@ -113,10 +150,16 @@ const CommonNavBar = () => {
           </div>
 
           {/* Mobile Hamburger Menu */}
-          <GiHamburgerMenu
+          <svg
+            xmlns="http://www.w3.org/2000/svg"
+            width="1em"
+            height="1em"
+            viewBox="0 0 24 24"
             className="block xl:hidden text-white text-2xl cursor-pointer"
             onClick={() => setIsOpen(!isOpen)}
-          />
+          >
+            <path fill="green" d="M3 18v-2h18v2zm0-5v-2h18v2zm0-5V6h18v2z" />
+          </svg>
         </div>
 
         {/* Mobile Navigation Drawer */}
@@ -133,12 +176,40 @@ const CommonNavBar = () => {
                 />
                 <button className="absolute right-0 h-[2.5em] px-2">
                   {!productName.length ? (
-                    <AiOutlineSearch className="text-slate-500 text-xl font-bold" />
+                    <svg
+                      xmlns="http://www.w3.org/2000/svg"
+                      width="1em"
+                      height="1em"
+                      viewBox="0 0 24 24"
+                      fill="green"
+                      className="text-slate-500 text-xl font-bold"
+                    >
+                      <g>
+                        <path
+                          fillRule="evenodd"
+                          d="M12 19a7 7 0 1 0 0-14a7 7 0 0 0 0 14m0 3c5.523 0 10-4.477 10-10S17.523 2 12 2S2 6.477 2 12s4.477 10 10 10"
+                          clipRule="evenodd"
+                          opacity="0.2"
+                        />
+                        <path d="M2 12C2 6.477 6.477 2 12 2v3a7 7 0 0 0-7 7z" />
+                      </g>
+                    </svg>
                   ) : (
-                    <IoMdClose
+                    <svg
+                      xmlns="http://www.w3.org/2000/svg"
+                      width="1em"
+                      height="1em"
+                      viewBox="0 0 24 24"
+                      fill="red"
                       className="text-slate-500 text-xl font-bold cursor-pointer"
                       onClick={clearSearchText}
-                    />
+                    >
+                      <path
+                        d="M18 6L6 18M6 6l12 12"
+                        stroke="currentColor"
+                        strokeWidth="2"
+                      />
+                    </svg>
                   )}
                 </button>
               </div>
@@ -187,7 +258,10 @@ const CommonNavBar = () => {
 
       {/* Searched Products Listing */}
       {productName.length > 0 && (
-        <SearchedDataListed productName={productName} setProductname={clearSearchText} />
+        <SearchedDataListed
+          productName={productName}
+          setProductname={clearSearchText}
+        />
       )}
     </>
   );
