@@ -3,8 +3,7 @@
 import { useState, useEffect } from "react";
 import { userRoleexplaination } from "@/utils/rolecard";
 import axios from "axios";
-import { signIn } from "next-auth/react";
-import { useSearchParams } from "next/navigation";
+import { useRouter, useSearchParams } from "next/navigation";
 
 const SignupForm = () => {
   const [showPassword, setShowPassword] = useState(false);
@@ -14,12 +13,14 @@ const SignupForm = () => {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
   const [userData, setUserData] = useState({
-    userIdentification: "",
+    username: "",
+    email: "",
     password: "",
     confirmPassword: "",
     role: "",
   });
 
+  const router = useRouter();
   const searchParams = useSearchParams();
   const callbackUrl = searchParams.get("callbackUrl");
 
@@ -33,7 +34,7 @@ const SignupForm = () => {
     setDisabled(!isUserData);
   }, [userData]);
 
-  const { userIdentification, password, confirmPassword, role } = userData;
+  const { username, email, password, confirmPassword, role } = userData;
 
   const onSubmit = async () => {
     setSubmit(true);
@@ -42,23 +43,13 @@ const SignupForm = () => {
     try {
       setLoading(true);
       const url = `/api/auth?authType=signup`;
-      const payload = { emailAddress: userIdentification, password, confirmPassword, role };
+      const payload = { username, email, password, confirmPassword, role };
 
       const response = await axios.post(url, payload);
 
       if (response.status === 201) {
-        const loginResponse = await signIn("credentials", {
-          emailAddress: userIdentification,
-          password,
-          redirect: false,
-          callbackUrl: callbackUrl || "/",
-        });
-
-        if (loginResponse?.error) {
-          setError("Cannot sign in after registration.");
-        } else {
-          window.location.href = loginResponse.url || "/";
-        }
+        // Redirect to login page after successful signup
+        router.push("/login");
       } else {
         setError("Cannot register the user. Try again.");
       }
@@ -85,9 +76,29 @@ const SignupForm = () => {
         <div className="relative">
           <input
             onChange={onChangeFn}
-            value={userIdentification}
-            name="userIdentification"
-            placeholder="Enter Email / Username"
+            value={username}
+            name="username"
+            placeholder="Enter Username"
+            className="w-full h-14 pl-12 pr-4 border rounded-lg focus:ring-2 focus:ring-secondary"
+          />
+          <svg
+            xmlns="http://www.w3.org/2000/svg"
+            className="absolute left-4 top-1/2 transform -translate-y-1/2 w-6 h-6 text-gray-400"
+            fill="none"
+            viewBox="0 0 24 24"
+            stroke="currentColor"
+          >
+            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M16 12l-4-4m0 0l-4 4m4-4v12" />
+          </svg>
+        </div>
+
+        <div className="relative">
+          <input
+            onChange={onChangeFn}
+            value={email}
+            name="email"
+            placeholder="Enter Email"
+            type="email"
             className="w-full h-14 pl-12 pr-4 border rounded-lg focus:ring-2 focus:ring-secondary"
           />
           <svg

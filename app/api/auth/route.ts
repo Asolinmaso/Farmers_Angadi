@@ -5,10 +5,10 @@ import connectMongo from "@/utils/Database"; // Ensure this file connects to Mon
 
 export async function POST(req: NextRequest) {
   try {
-    const { emailAddress, password, confirmPassword, role } = await req.json();
+    const { email, password, confirmPassword, role,username } = await req.json();
 
     // Check for missing fields
-    if (!emailAddress || !password || !confirmPassword || !role) {
+    if (!email || !password || !confirmPassword || !role || !username) {
       return NextResponse.json({ message: "Missing required fields" }, { status: 400 });
     }
 
@@ -20,7 +20,7 @@ export async function POST(req: NextRequest) {
     await connectMongo(); // Connect to the database
 
     // Check if the user already exists
-    const existingUser = await User.findOne({ email: emailAddress });
+    const existingUser = await User.findOne({ email: email });
     if (existingUser) {
       return NextResponse.json({ message: "User already exists" }, { status: 409 });
     }
@@ -30,7 +30,8 @@ export async function POST(req: NextRequest) {
 
     // Create a new user object
     const newUser = new User({
-      email: emailAddress,
+      username:username,
+      email: email,
       password: hashedPassword,
       role,
       createdAt: new Date(),

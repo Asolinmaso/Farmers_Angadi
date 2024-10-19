@@ -1,3 +1,5 @@
+// app/checkout/page.js
+
 "use client";
 
 import axios from "axios";
@@ -7,6 +9,7 @@ import Swal from "sweetalert2";
 import Link from "next/link";
 import IndividualCartProductCard from "@/components/Molecules/CartCard";
 import { CartItemInterface } from "@/utils/interface";
+import { generateInvoicePDF } from "../Invoice/InvoicePdfGeneration";
 
 const CartOrganelles = () => {
   const { data: session } = useSession(); // Use session to get user info
@@ -35,13 +38,12 @@ const CartOrganelles = () => {
       const fetchCartData = await axios.get(
         `/api/cart?userId=${session.user.id}`
       );
-      console.log("Fetched Cart Data: ", fetchCartData.data);
 
       if (fetchCartData.data?.items?.length) {
-        setCartItems(fetchCartData.data.items); // Set cart items
+        setCartItems(fetchCartData.data.items);
         setEditCard(false);
       } else {
-        setCartItems([]); // Clear cart if no items found
+        setCartItems([]);
       }
 
       setCartLoading(false);
@@ -58,7 +60,17 @@ const CartOrganelles = () => {
     }
   }, [session, deleteInitiated]);
 
-  const onCheckout = () => {
+  const loadRazorpayScript = () => {
+    return new Promise((resolve) => {
+      const script = document.createElement("script");
+      script.src = "https://checkout.razorpay.com/v1/checkout.js";
+      script.onload = () => resolve(true);
+      script.onerror = () => resolve(false);
+      document.body.appendChild(script);
+    });
+  };
+
+  const onCheckout = async () => {
     if (editCard) {
       Swal.fire({
         icon: "warning",
@@ -77,11 +89,73 @@ const CartOrganelles = () => {
       return;
     }
 
-    Swal.fire({
-      icon: "success",
-      text: "Proceeding to checkout!",
-      timer: 3000,
-    });
+    try {
+      const res = await loadRazorpayScript();
+
+      if (!res) {
+        Swal.fire({
+          icon: "error",
+          text: "Razorpay SDK failed to load. Are you online?",
+          timer: 3000,
+        });
+        return;
+      }
+
+      const response = await axios.post("/api/razorpayOrder", {
+        amount: totalCartAmount,
+      });
+
+      const { orderId } = response.data;
+
+      if (!orderId) {
+        Swal.fire({
+          icon: "error",
+          text: "Failed to create order. Please try again.",
+          timer: 3000,
+        });
+        return;
+      }
+
+      const options = {
+        key: process.env.NEXT_PUBLIC_RAZORPAY_KEY_ID,
+        amount: totalCartAmount * 100, // Convert amount to paisa
+        currency: "INR",
+        name: "Farmers Angadi",
+        description: "Purchase from Angadi Shop",
+        order_id: orderId,
+        handler: async function (response) {
+          Swal.fire({
+            icon: "success",
+            text: `Payment successful! Payment ID: ${response.razorpay_payment_id}`,
+            timer: 3000,
+          });
+          await generateInvoicePDF({
+            userName: session?.user?.username || "Customer",
+            paymentId: response.razorpay_payment_id,
+            cartItems: cartItems,
+            totalAmount: totalCartAmount,
+          });
+        },
+        prefill: {
+          name: session?.user?.username || "Your Name",
+          email: session?.user?.email || "email@example.com",
+          contact: "8220158319",
+        },
+        theme: {
+          color: "#3399cc",
+        },
+      };
+
+      const paymentObject = new window.Razorpay(options);
+      paymentObject.open();
+    } catch (error) {
+      console.error("Checkout error:", error);
+      Swal.fire({
+        icon: "error",
+        text: "Something went wrong during the checkout process.",
+        timer: 3000,
+      });
+    }
   };
 
   const onEditRequestedChanges = async () => {
@@ -129,9 +203,9 @@ const CartOrganelles = () => {
               >
                 <g fill="green">
                   <path
-                    fill-rule="evenodd"
+                    fillRule="evenodd"
                     d="M12 19a7 7 0 1 0 0-14a7 7 0 0 0 0 14m0 3c5.523 0 10-4.477 10-10S17.523 2 12 2S2 6.477 2 12s4.477 10 10 10"
-                    clip-rule="evenodd"
+                    clipRule="evenodd"
                     opacity="0.2"
                   />
                   <path d="M2 12C2 6.477 6.477 2 12 2v3a7 7 0 0 0-7 7z" />
