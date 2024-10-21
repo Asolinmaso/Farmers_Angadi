@@ -22,7 +22,6 @@ export async function DELETE(req: NextRequest) {
 }
 
 // Fetch cart items
-// Fetch cart items
 async function getCartItems(req: NextRequest) {
     const { searchParams } = new URL(req.url);
     const userId = searchParams.get("userId");
@@ -73,25 +72,23 @@ async function getCartItems(req: NextRequest) {
     }
   }
   
-// Add item to cart
-import { Types } from "mongoose"; // Import Types from mongoose
-
 // Add item to cart or increment if already exists
 async function addToCart(req: NextRequest) {
   await connectMongo();
   try {
     const body = await req.json();
-    const { productId, productCount, userId, status } = body;
+    const { productId, productCount, userId } = body;
 
     // Ensure userId is a valid ObjectId
-    if (!Types.ObjectId.isValid(userId)) {
+    if (!mongoose.Types.ObjectId.isValid(userId)) {
       return NextResponse.json({ error: "Invalid user ID" }, { status: 400 });
     }
 
     // Check if the product already exists in the user's cart
     const existingCartItem = await CartModel.findOne({
-      userId: new Types.ObjectId(userId),
-      productId: new Types.ObjectId(productId),
+      userId: new mongoose.Types.ObjectId(userId),
+      productId: new mongoose.Types.ObjectId(productId),
+      status: "CART", // Only look for items that are currently in "CART" status
     });
 
     if (existingCartItem) {
@@ -100,12 +97,12 @@ async function addToCart(req: NextRequest) {
       await existingCartItem.save();
       return NextResponse.json(existingCartItem);
     } else {
-      // If it doesn't exist, create a new cart item
+      // If it doesn't exist, create a new cart item with status "CART"
       const newCartItem = new CartModel({
         productId,
         productCount,
-        userId: new Types.ObjectId(userId),
-        status,
+        userId: new mongoose.Types.ObjectId(userId),
+        status: "CART",
       });
 
       await newCartItem.save();
@@ -116,7 +113,6 @@ async function addToCart(req: NextRequest) {
     return NextResponse.json({ error: "Failed to add item to cart" }, { status: 500 });
   }
 }
-
 
 
 // Update cart item

@@ -8,7 +8,7 @@ import { useSession } from 'next-auth/react';
 export const AuthWrapper = ({ children }) => {
   const { setSelectedUserdata, setLoading, loading } = useAuth();
   const { data: session, status } = useSession();
-  const router = useRouter();
+  const router = useRouter(); 
 
   useEffect(() => {
     if (status === 'loading') {
@@ -17,23 +17,22 @@ export const AuthWrapper = ({ children }) => {
     }
 
     if (status === 'unauthenticated') {
-      setLoading(false); // Authentication failed, hide loader
-      router.push('/'); // Redirect unauthenticated users
+      setLoading(false); 
+      router.push('/');
     } else if (session) {
       // Store user data and hide loader
       setSelectedUserdata(session.user);
-      setLoading(false); // Authentication complete, hide loader
+      setLoading(false);
     }
   }, [session, status]);
 
-  // Render the full-page loader while authentication is being resolved
   if (loading) {
     return (
       <div className="flex items-center justify-center h-screen">
-        <div className="loader"></div> {/* Customize this with a spinner or loader */}
+        <div className="loader"></div> 
       </div>
     );
   }
 
-  return <>{children}</>; // Render children only when not loading
+  return <>{children}</>; 
 };

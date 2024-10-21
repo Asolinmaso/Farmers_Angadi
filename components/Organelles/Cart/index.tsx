@@ -15,43 +15,53 @@ const CartOrganelles = () => {
   const { data: session } = useSession(); // Use session to get user info
   const [cartItems, setCartItems] = useState<CartItemInterface[]>([]);
   const [cartLoading, setCartLoading] = useState(true);
+  const [totalCartAmount, setTotalCartAmount] = useState(0);
   const [editCard, setEditCard] = useState(false);
   const [deleteInitiated, setDeleteInitiated] = useState(false);
   const [changesRequestedcards, setChangesRequestCards] = useState<
     CartItemInterface[]
   >([]);
 
-  // Calculate total cart amount
-  const totalCartAmount = cartItems.reduce((acc, item) => {
-    const product = item.productDetails;
-    const itemTotal = (product.cost - product.discount) * item.productCount;
-    return acc + itemTotal;
-  }, 0);
 
+  useEffect(() => {
+    // Recalculate total when cart items or their quantities change
+    const total = cartItems.reduce((acc, item) => {
+      const product = item.productDetails;
+      const itemTotal = (product.cost - product.discount) * item.productCount;
+      return acc + itemTotal;
+    }, 0);
+    setTotalCartAmount(total);
+  }, [cartItems]);
+  
   // Fetch cart items for the current user
   const fetchData = async () => {
-    if (!session?.user?.id) return; // Return early if no user ID in session
-
+    if (!session?.user?.id) return;
+  
     try {
       setCartLoading(true);
-
+  
       const fetchCartData = await axios.get(
         `/api/cart?userId=${session.user.id}`
       );
-
+  
       if (fetchCartData.data?.items?.length) {
-        setCartItems(fetchCartData.data.items);
+        // Filter out items with "PAID" status
+        const activeCartItems = fetchCartData.data.items.filter(
+          (item) => item.status === "CART"
+        );
+        setCartItems(activeCartItems);
         setEditCard(false);
       } else {
         setCartItems([]);
       }
-
+  
       setCartLoading(false);
     } catch (err) {
       console.error("Error fetching cart data:", err);
       setCartLoading(false);
     }
   };
+  
 
   useEffect(() => {
     if (session?.user?.id && (!cartItems.length || deleteInitiated)) {
@@ -71,15 +81,7 @@ const CartOrganelles = () => {
   };
 
   const onCheckout = async () => {
-    if (editCard) {
-      Swal.fire({
-        icon: "warning",
-        text: "Please save your changes before proceeding to checkout.",
-        timer: 3000,
-      });
-      return;
-    }
-
+      
     if (!cartItems.length) {
       Swal.fire({
         icon: "error",
@@ -88,10 +90,10 @@ const CartOrganelles = () => {
       });
       return;
     }
-
+  
     try {
       const res = await loadRazorpayScript();
-
+  
       if (!res) {
         Swal.fire({
           icon: "error",
@@ -100,13 +102,14 @@ const CartOrganelles = () => {
         });
         return;
       }
-
+  
       const response = await axios.post("/api/razorpayOrder", {
         amount: totalCartAmount,
+        userId: session.user.id,
       });
-
+  
       const { orderId } = response.data;
-
+  
       if (!orderId) {
         Swal.fire({
           icon: "error",
@@ -115,7 +118,7 @@ const CartOrganelles = () => {
         });
         return;
       }
-
+  
       const options = {
         key: process.env.NEXT_PUBLIC_RAZORPAY_KEY_ID,
         amount: totalCartAmount * 100, // Convert amount to paisa
@@ -135,6 +138,8 @@ const CartOrganelles = () => {
             cartItems: cartItems,
             totalAmount: totalCartAmount,
           });
+          // Fetch updated cart data to refresh the view
+          fetchData();
         },
         prefill: {
           name: session?.user?.username || "Your Name",
@@ -145,7 +150,7 @@ const CartOrganelles = () => {
           color: "#3399cc",
         },
       };
-
+  
       const paymentObject = new window.Razorpay(options);
       paymentObject.open();
     } catch (error) {
@@ -157,31 +162,8 @@ const CartOrganelles = () => {
       });
     }
   };
-
-  const onEditRequestedChanges = async () => {
-    const promises = changesRequestedcards.map(async (item) => {
-      const response = await axios.put(`/api/cart`, {
-        cartId: item._id,
-        productCount: item.productCount,
-        status: "CART",
-      });
-
-      if (response.data && response.status === 200) {
-        return item;
-      }
-      return null;
-    });
-
-    const results = await Promise.all(promises);
-    if (results.some((item) => item !== null)) {
-      setChangesRequestCards([]);
-      Swal.fire({
-        icon: "success",
-        text: "Items edited successfully",
-        timer: 3000,
-      });
-    }
-  };
+  
+  
 
   return (
     <div className="flex flex-col items-center w-full h-full">
@@ -227,6 +209,14 @@ const CartOrganelles = () => {
                 changedData={changesRequestedcards}
                 setChangedData={setChangesRequestCards}
                 toDelete={setDeleteInitiated}
+                onItemCountChange={(updatedItem) => {
+                  // Update the cartItems state with the new item count
+                  setCartItems((prevItems) =>
+                    prevItems.map((item) =>
+                      item._id === updatedItem._id ? { ...item, productCount: updatedItem.productCount } : item
+                    )
+                  );
+                }}
               />
             ))
           )}

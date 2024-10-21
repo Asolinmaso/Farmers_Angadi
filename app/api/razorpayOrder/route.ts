@@ -1,9 +1,9 @@
-// app/api/razorpayOrder/route.js
-
 import Razorpay from 'razorpay';
+import connectMongo from '@/utils/Database';
+import CartModel from '@/models/cart';
 
 export async function POST(req) {
-  const { amount } = await req.json();
+  const { amount, userId } = await req.json();
 
   try {
     const razorpay = new Razorpay({
@@ -18,6 +18,14 @@ export async function POST(req) {
     };
 
     const order = await razorpay.orders.create(options);
+
+    // Update cart items' status to "PAID" after successful order creation
+    await connectMongo();
+    await CartModel.updateMany(
+      { userId, status: "CART" },
+      { $set: { status: "PAID" } }
+    );
+
     return new Response(JSON.stringify({ orderId: order.id }), {
       status: 200,
       headers: { 'Content-Type': 'application/json' },

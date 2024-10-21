@@ -11,12 +11,15 @@ const IndividualCartProductCard = ({
   changedData,
   setChangedData,
   toDelete,
+  onItemCountChange
 }: {
   items: CartItemInterface;
   changeIfEditted: Dispatch<SetStateAction<boolean>>;
   changedData: CartItemInterface[];
   setChangedData: Dispatch<SetStateAction<CartItemInterface[]>>;
   toDelete: Dispatch<SetStateAction<boolean>>;
+  onItemCountChange: (updatedItem: CartItemInterface) => void; // Define the type
+
 }) => {
   const [productCount, setProductCount] = useState(items.productCount);
 
@@ -36,6 +39,9 @@ const IndividualCartProductCard = ({
         productCount: newCount,
         status: "CART",
       });
+      setProductCount(newCount); 
+      changeIfEditted(true);
+
     } catch (error) {
       console.error("Error updating cart count:", error);
       Swal.fire({
@@ -52,6 +58,8 @@ const IndividualCartProductCard = ({
       const newCount = productCount + 1;
       setProductCount(newCount);
       updateCartCount(newCount);
+      onItemCountChange({ ...items, productCount: newCount });
+
     }
   };
 
@@ -60,6 +68,8 @@ const IndividualCartProductCard = ({
       const newCount = productCount - 1;
       setProductCount(newCount);
       updateCartCount(newCount);
+      onItemCountChange({ ...items, productCount: newCount });
+
     } else {
       deleteItemsFromCart(items._id);
     }
